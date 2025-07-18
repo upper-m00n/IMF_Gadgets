@@ -87,7 +87,28 @@ router.patch('/:id',async (req,res)=>{
 // delete
 
 router.delete('/:id', async(req,res)=>{
-    
+    try {
+     const {id} = req.params;
+
+        const gadget = await prisma.gadget.update({
+            where:{id},
+            data:{
+                status:"Decommissioned",
+                decommissionedAt: new Date()
+            }
+        });
+
+        if(!gadget){
+            return res.status(400).json({error:"gadget not found"});
+        }
+
+        res.status(200).json({success:true, message:"Gadget decommissioned", gadget})
+
+        
+    } catch (error) {
+        console.error("DELETE error:", error);
+        res.status(500).json({ success: false, message: "Failed to decommission gadget." });
+    }
 })
 
 module.exports = router;
