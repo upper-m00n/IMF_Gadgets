@@ -72,6 +72,7 @@ router.patch('/:id',async (req,res)=>{
             data:updates
         });
 
+        // optional check 
         if(!gadget){
             return res.status(400).json({error:"gadget not found"});
         }
