@@ -9,26 +9,25 @@ const getRandomSuccessProbability = ()=>{
     return `${Math.floor(Math.random()*51)+50}% sucsess probability`;
 }
 
-// GET
-router.get('/',async(req,res)=>{
+// GET route for fetching all gadgets and with filter status 
+
+router.get('/', async(req,res)=>{
     try {
-        const {status} = req.query;
+        const {status}= req.query;
 
         const gadgets = await prisma.gadget.findMany({
-            where: status ? {status} : {},
-            orderBy: {createdAt : 'desc'},
-        });
+            where: status ? {status}: {},
+            
+        })
 
-        const gadgetWithSuccess = gadgets.map((gadget)=> ({
-            ...gadget,
-            missionSuccessProbability: getRandomSuccessProbability(),
-        }));
+        if(gadgets.length === 0){
+            return res.status(400).json({error:"gadgets not found"});
+        }
 
-        res.status(200).json(gadgetWithSuccess);
-
+        res.status(201).json(gadgets);
     } catch (error) {
-        console.error('Error fetching gadgets:',error);
-        res.status(500).json({message:"Internal Server Error"})
+        console.error("cannot get gadgets", error);
+        res.status(500).json({ success: false, message: "Failed to fetch gadgets" });
     }
 })
 
