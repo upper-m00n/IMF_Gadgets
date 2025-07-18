@@ -112,4 +112,42 @@ router.delete('/:id', async(req,res)=>{
     }
 })
 
+// post self-destruct route
+
+router.post("/:id/self-destruct", async(req,res)=>{
+    const {id} = req.params;
+
+    try {
+        //---confirmation code generation here
+        const confirmationCode=`CONF-${Math.floor(Math.random()*900000)+100000}`
+
+        const gadget = await prisma.gadget.update({
+            where:{id},
+            data:{
+                status:"Decommissioned",
+                decommissionedAt: new Date(),
+            }
+        });
+
+        //optional error check
+        if(!gadget){
+            return res.status(400).json({error:"gadget not found"});
+        }
+
+        res.status(200).json({success:true,
+            message:"Self-destruct is triggered",
+            confirmationCode,
+            gadget,
+        })
+
+
+
+    } catch (error) {
+        console.error("Self-destruct error:", error);
+        res.status(500).json({ success: false, message: "Failed to trigger self-destruct." });
+  
+    }
+    
+})
+
 module.exports = router;
