@@ -13,6 +13,10 @@ app.use(express.json());
 app.use('/gadgets',gadgetRoutes);
 app.use('/auth',authRoutes);
 
+app.get('/', (req,res)=>{
+    res.json({message:"API is working"});
+})
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT,()=>{
