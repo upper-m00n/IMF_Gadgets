@@ -5,17 +5,17 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMENI_API_KEY,
 });
 
-const  generateCodenameGemini= async ()=>{
+const  generateCodenameGemini= async (name)=>{
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",
           parts: [
             {
               text:
-                "Suggest a unique codename for a secret agent gadget, like Nightfall or Phantom Blade. Just return the codename.",
+                `Suggest a unique codename for a secret agent gadget named ${name}. Just return a unique codename everytime.`,
             },
           ],
         },

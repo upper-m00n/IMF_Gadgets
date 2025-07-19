@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {PrismaClient} = require('@prisma/client')
 const prisma = new PrismaClient();
-const {generateCodenameGemini}= require('../utils/gemini')
+const {generateCodenameGemini}= require('../utils/gemini');
+const authenticate = require('../middleware/authMiddleware');
 
 // lets generate random success probabillity 
 const getRandomSuccessProbability = ()=>{
@@ -11,20 +12,25 @@ const getRandomSuccessProbability = ()=>{
 
 // GET route for fetching all gadgets and with filter status 
 
-router.get('/', async(req,res)=>{
+router.get('/',authenticate,async(req,res)=>{
     try {
         const {status}= req.query;
 
         const gadgets = await prisma.gadget.findMany({
             where: status ? {status}: {},
-            
+            orderBy:{createdAt:'desc'}
         })
+
+        const gadgetWithSuccess=gadgets.map((gadget)=>({
+            ...gadget,
+            missionSuccessProbability:getRandomSuccessProbability(),
+        }))
 
         if(gadgets.length === 0){
             return res.status(400).json({error:"gadgets not found"});
         }
 
-        res.status(201).json(gadgets);
+        res.status(201).json({gadgetWithSuccess});
     } catch (error) {
         console.error("cannot get gadgets", error);
         res.status(500).json({ success: false, message: "Failed to fetch gadgets" });
@@ -32,7 +38,7 @@ router.get('/', async(req,res)=>{
 })
 
 //POST
-router.post('/',async(req,res)=>{
+router.post('/',authenticate,async(req,res)=>{
     try {
         const {name, status}=req.body;
 
@@ -40,9 +46,12 @@ router.post('/',async(req,res)=>{
             return res.status(400).json({error:'Name is required'});
         }
 
-        // using gemini-pro for generating codename
+        // unique code name check
 
-        const codename = await generateCodenameGemini();
+        const codename = await generateCodenameGemini(name);
+        
+    
+        console.log("codename",codename)
 
         const newGadget = await prisma.gadget.create({
             data:{
@@ -52,7 +61,7 @@ router.post('/',async(req,res)=>{
             },
         });
 
-        res.status(201).json(newGadget);
+        res.status(201).json({success:true, newGadget});
     } catch (error) {
         console.error('Error creating new gadget', error);
         res.status(500).json({error:"Internal server Error"})
@@ -61,21 +70,27 @@ router.post('/',async(req,res)=>{
 
 // patch
 
-router.patch('/:id',async (req,res)=>{
+router.patch('/:id',authenticate,async (req,res)=>{
     try {
         const {id}= req.params;
         const updates=req.body;
+
+        const checkGadget= await prisma.gadget.findUnique({
+            where:{id}
+        })
+
+        // Chechk is Gadget exists
+
+        if(!checkGadget){
+            return res.status(404).json("Gadget not found");
+        }
 
         const gadget = await prisma.gadget.update({
             where:{id,},
             data:updates
         });
 
-        // optional check 
-        if(!gadget){
-            return res.status(400).json({error:"gadget not found"});
-        }
-
+        
         res.status(200).json({success:true, gadget});
         
     } catch (error) {
@@ -86,7 +101,7 @@ router.patch('/:id',async (req,res)=>{
 
 // delete
 
-router.delete('/:id', async(req,res)=>{
+router.delete('/:id',authenticate, async(req,res)=>{
     try {
      const {id} = req.params;
 
@@ -113,7 +128,7 @@ router.delete('/:id', async(req,res)=>{
 
 // post self-destruct route
 
-router.post("/:id/self-destruct", async(req,res)=>{
+router.post("/:id/self-destruct",authenticate ,async(req,res)=>{
     const {id} = req.params;
 
     try {

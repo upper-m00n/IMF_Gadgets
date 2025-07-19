@@ -4,12 +4,14 @@ const prisma = new PrismaClient();
 const express = require('express');
 const app = express();
 const gadgetRoutes =require('./routes/gadgetRoutes')
+const authRoutes= require('./routes/authRoutes')
 
 app.use(express.json());
 
 // routes
 
 app.use('/gadgets',gadgetRoutes);
+app.use('/auth',authRoutes);
 
 const PORT = process.env.PORT || 3000;
 
